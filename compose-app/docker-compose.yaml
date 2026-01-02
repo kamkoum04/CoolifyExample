@@ -3,8 +3,8 @@ version: '3.8'
 services:
   web:
     build: ./web
-    ports:
-      - "8080:80"
+    expose:
+      - "80"
     depends_on:
       - api
     networks:
@@ -12,8 +12,8 @@ services:
 
   api:
     build: ./api
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
