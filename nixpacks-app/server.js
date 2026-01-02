@@ -18,28 +18,35 @@ if (process.env.DATABASE_URL) {
             dbUrl = dbUrl.replace('@local', '@localhost');
         }
         
-        // CRITICAL FIX: Replace localhost with database container name for Docker networking
-        // Coolify provides DATABASE_URL with localhost, but containers need the service name
-        if (process.env.DATABASE_INTERNAL_HOST) {
-            // If Coolify provides the internal host, use it
-            const internalHost = process.env.DATABASE_INTERNAL_HOST.trim();
-            dbUrl = dbUrl.replace('@localhost:', `@${internalHost}:`);
-            console.log(`✅ Using Coolify internal database host: ${internalHost}`);
-        } else {
-            // Try common Coolify database container names
-            const commonDbHosts = ['kcwk4kgk8s0ows40ok4o4s08', 'postgres-database'];
-            // For now, log what we have
-            console.log('⚠️  DATABASE_INTERNAL_HOST not set, using localhost from DATABASE_URL');
+        // Parse the URL to extract components
+        const urlObj = new URL(dbUrl);
+        const password = urlObj.password;
+        const user = urlObj.username;
+        const database = urlObj.pathname.slice(1);
+        const port = urlObj.port || 5432;
+        
+        // Try to use the provided internal host, or fall back to database container name
+        let host = process.env.DATABASE_INTERNAL_HOST?.trim() || 'postgres-database';
+        
+        // If DATABASE_URL hostname is localhost, replace with container name
+        if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
+            host = process.env.DATABASE_INTERNAL_HOST?.trim() || process.env.DATABASE_HOST?.trim() || 'postgres-database';
         }
         
         poolConfig = {
-            connectionString: dbUrl,
+            host: host,
+            port: port,
+            database: database,
+            user: user,
+            password: password,
             ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
         };
-        console.log('✅ Using DATABASE_URL connection string');
-        console.log('   Connecting to:', dbUrl.replace(/:[^@]*@/, ':***@'));
+        
+        console.log('✅ Parsed DATABASE_URL successfully');
+        console.log(`   Connecting to: ${user}@${host}:${port}/${database}`);
     } catch (e) {
-        console.error('⚠️ Failed to parse DATABASE_URL, falling back to individual variables');
+        console.error('⚠️ Failed to parse DATABASE_URL:', e.message);
+        console.error('   Falling back to individual variables');
         poolConfig = buildConfigFromEnv();
     }
 } else {
@@ -49,7 +56,7 @@ if (process.env.DATABASE_URL) {
 
 function buildConfigFromEnv() {
     return {
-        host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+        host: process.env.DB_HOST || process.env.PGHOST || 'postgres-database',
         port: process.env.DB_PORT || process.env.PGPORT || 5432,
         database: process.env.DB_NAME || process.env.PGDATABASE || 'postgres',
         user: process.env.DB_USER || process.env.PGUSER || 'postgres',
