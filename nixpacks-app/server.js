@@ -10,14 +10,20 @@ let poolConfig;
 // Try to construct from DATABASE_URL first, but fix formatting issues
 if (process.env.DATABASE_URL) {
     try {
-        const dbUrl = process.env.DATABASE_URL.trim().replace(/\s+/g, ' ');
-        // Fix common Coolify formatting issues
-        const fixedUrl = dbUrl.replace(/localhost\s+host:/, 'localhost:');
+        // Remove ALL whitespace including newlines, then reconstruct properly
+        let dbUrl = process.env.DATABASE_URL.replace(/\s+/g, '');
+        
+        // Fix broken localhost hostname
+        if (dbUrl.includes('localhost:') === false && dbUrl.includes('@local')) {
+            dbUrl = dbUrl.replace('@local', '@localhost');
+        }
+        
         poolConfig = {
-            connectionString: fixedUrl,
+            connectionString: dbUrl,
             ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
         };
-        console.log('✅ Using DATABASE_URL connection string (fixed formatting)');
+        console.log('✅ Using DATABASE_URL connection string (whitespace fixed)');
+        console.log('   Connecting to:', dbUrl.replace(/:[^@]*@/, ':***@'));
     } catch (e) {
         console.error('⚠️ Failed to parse DATABASE_URL, falling back to individual variables');
         poolConfig = buildConfigFromEnv();
