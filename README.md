@@ -1,6 +1,6 @@
 # CoolifyExample
 
-This repository contains 4 demo applications showcasing different Coolify build pack strategies.
+This repository contains 5 demo applications showcasing different Coolify build pack strategies.
 
 ## 📁 Applications
 
@@ -28,6 +28,12 @@ This repository contains 4 demo applications showcasing different Coolify build 
 - Nginx frontend + Node.js API
 - Services communicate via internal network
 
+### 5. 🗄️ Nixpacks + Database App (`/nixpacks-app`)
+**Build Pack:** Nixpacks
+- Node.js Express with PostgreSQL
+- Task management CRUD app
+- Connects to Coolify-managed database
+
 ## 🚀 Deploying on Coolify
 
 1. Add a new application in Coolify
@@ -38,6 +44,17 @@ This repository contains 4 demo applications showcasing different Coolify build 
    - `nodejs-app` → **Nixpacks**
    - `dockerfile-app` → **Dockerfile**
    - `compose-app` → **Docker Compose**
+   - `nixpacks-app` → **Nixpacks** + PostgreSQL Database
+
+## 🗄️ Database Setup (for nixpacks-app)
+
+1. In Coolify, go to **Resources** → **New** → **Database** → **PostgreSQL**
+2. Create the database and copy the connection string
+3. In your nixpacks-app, add environment variable:
+   ```
+   DATABASE_URL=postgresql://user:password@hostname:5432/database
+   ```
+4. Deploy the app!
 
 ## 📝 License
 MIT
