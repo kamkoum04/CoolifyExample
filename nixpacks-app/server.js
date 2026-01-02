@@ -7,28 +7,46 @@ const PORT = process.env.PORT || 3000;
 // PostgreSQL connection using environment variables from Coolify
 let poolConfig;
 
+// Try to construct from DATABASE_URL first, but fix formatting issues
 if (process.env.DATABASE_URL) {
-    // Trim whitespace from DATABASE_URL (Coolify sometimes adds newlines)
-    const dbUrl = process.env.DATABASE_URL.trim();
-    poolConfig = {
-        connectionString: dbUrl,
-        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
-    };
-    console.log('✅ Using DATABASE_URL connection string');
+    try {
+        const dbUrl = process.env.DATABASE_URL.trim().replace(/\s+/g, ' ');
+        // Fix common Coolify formatting issues
+        const fixedUrl = dbUrl.replace(/localhost\s+host:/, 'localhost:');
+        poolConfig = {
+            connectionString: fixedUrl,
+            ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+        };
+        console.log('✅ Using DATABASE_URL connection string (fixed formatting)');
+    } catch (e) {
+        console.error('⚠️ Failed to parse DATABASE_URL, falling back to individual variables');
+        poolConfig = buildConfigFromEnv();
+    }
 } else {
     // Fallback to individual variables
-    poolConfig = {
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 5432,
-        database: process.env.DB_NAME || 'postgres',
-        user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD,
+    poolConfig = buildConfigFromEnv();
+}
+
+function buildConfigFromEnv() {
+    return {
+        host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+        port: process.env.DB_PORT || process.env.PGPORT || 5432,
+        database: process.env.DB_NAME || process.env.PGDATABASE || 'postgres',
+        user: process.env.DB_USER || process.env.PGUSER || 'postgres',
+        password: process.env.DB_PASSWORD || process.env.PGPASSWORD,
         ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
     };
-    console.log('✅ Using individual DB environment variables');
 }
 
 const pool = new Pool(poolConfig);
+
+// Log connection details (without password)
+console.log('Database config:', {
+    host: poolConfig.host,
+    port: poolConfig.port,
+    database: poolConfig.database,
+    user: poolConfig.user
+});
 
 app.use(express.json());
 
@@ -43,11 +61,17 @@ async function initDB() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('✅ Database initialized');
+        console.log('✅ Database initialized successfully');
     } catch (err) {
         console.error('❌ Database initialization error:', err.message);
+        console.error('Full error:', err);
     }
 }
+
+// Test connection on startup
+pool.on('error', (err) => {
+    console.error('❌ Unexpected connection error:', err);
+});
 
 // Home page
 app.get('/', (req, res) => {
