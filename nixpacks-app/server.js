@@ -1,11 +1,25 @@
 const express = require('express');
 const { Pool } = require('pg');
+const dns = require('dns');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // PostgreSQL connection using environment variables from Coolify
 let poolConfig;
+
+// List of possible database hostnames to try (Coolify container names)
+const DB_HOST_CANDIDATES = [
+    process.env.DATABASE_INTERNAL_HOST?.trim(),
+    process.env.DATABASE_HOST?.trim(),
+    process.env.DB_HOST?.trim(),
+    process.env.PGHOST?.trim(),
+    // Add your Coolify database container name here as fallback
+    'kcwk4kgk8s0ows40ok4o4s08',
+    'postgres-database',
+    'postgres',
+    'db'
+].filter(Boolean);
 
 // Try to construct from DATABASE_URL first, but fix formatting issues
 if (process.env.DATABASE_URL) {
@@ -25,12 +39,10 @@ if (process.env.DATABASE_URL) {
         const database = urlObj.pathname.slice(1);
         const port = urlObj.port || 5432;
         
-        // Try to use the provided internal host, or fall back to database container name
-        let host = process.env.DATABASE_INTERNAL_HOST?.trim() || 'postgres-database';
-        
-        // If DATABASE_URL hostname is localhost, replace with container name
-        if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
-            host = process.env.DATABASE_INTERNAL_HOST?.trim() || process.env.DATABASE_HOST?.trim() || 'postgres-database';
+        // If DATABASE_URL hostname is localhost, use the first available candidate
+        let host = urlObj.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') {
+            host = DB_HOST_CANDIDATES[0] || 'kcwk4kgk8s0ows40ok4o4s08';
         }
         
         poolConfig = {
@@ -56,7 +68,7 @@ if (process.env.DATABASE_URL) {
 
 function buildConfigFromEnv() {
     return {
-        host: process.env.DB_HOST || process.env.PGHOST || 'postgres-database',
+        host: DB_HOST_CANDIDATES[0] || 'kcwk4kgk8s0ows40ok4o4s08',
         port: process.env.DB_PORT || process.env.PGPORT || 5432,
         database: process.env.DB_NAME || process.env.PGDATABASE || 'postgres',
         user: process.env.DB_USER || process.env.PGUSER || 'postgres',
