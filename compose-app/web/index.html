@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Compose App - Coolify Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 600px;
+        }
+        h1 { color: #333; margin-bottom: 1rem; font-size: 2.5rem; }
+        p { color: #666; line-height: 1.6; margin-bottom: 1rem; }
+        .services {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+        .service {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .service-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .service-name { font-weight: bold; color: #333; }
+        .badge {
+            display: inline-block;
+            background: #4facfe;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        #api-response {
+            background: #f4f4f4;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #4facfe;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        button:hover { background: #3d9be0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐙 Docker Compose App</h1>
+        <p>This multi-service application is deployed using <strong>Docker Compose</strong>.</p>
+        
+        <div class="services">
+            <div class="service">
+                <div class="service-icon">🌐</div>
+                <div class="service-name">Web (Nginx)</div>
+            </div>
+            <div class="service">
+                <div class="service-icon">⚡</div>
+                <div class="service-name">API (Node.js)</div>
+            </div>
+        </div>
+        
+        <span class="badge">Docker Compose Multi-Service</span>
+        
+        <button onclick="fetchApi()">Call API Service</button>
+        <div id="api-response">Click the button to call the API service</div>
+    </div>
+
+    <script>
+        async function fetchApi() {
+            try {
+                const response = await fetch('/api/info');
+                const data = await response.json();
+                document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('api-response').textContent = 'API call failed: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
