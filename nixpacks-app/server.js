@@ -10,7 +10,7 @@ let poolConfig;
 // Try to construct from DATABASE_URL first, but fix formatting issues
 if (process.env.DATABASE_URL) {
     try {
-        // Remove ALL whitespace including newlines, then reconstruct properly
+        // Remove ALL whitespace including newlines
         let dbUrl = process.env.DATABASE_URL.replace(/\s+/g, '');
         
         // Fix broken localhost hostname
@@ -18,11 +18,25 @@ if (process.env.DATABASE_URL) {
             dbUrl = dbUrl.replace('@local', '@localhost');
         }
         
+        // CRITICAL FIX: Replace localhost with database container name for Docker networking
+        // Coolify provides DATABASE_URL with localhost, but containers need the service name
+        if (process.env.DATABASE_INTERNAL_HOST) {
+            // If Coolify provides the internal host, use it
+            const internalHost = process.env.DATABASE_INTERNAL_HOST.trim();
+            dbUrl = dbUrl.replace('@localhost:', `@${internalHost}:`);
+            console.log(`✅ Using Coolify internal database host: ${internalHost}`);
+        } else {
+            // Try common Coolify database container names
+            const commonDbHosts = ['kcwk4kgk8s0ows40ok4o4s08', 'postgres-database'];
+            // For now, log what we have
+            console.log('⚠️  DATABASE_INTERNAL_HOST not set, using localhost from DATABASE_URL');
+        }
+        
         poolConfig = {
             connectionString: dbUrl,
             ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
         };
-        console.log('✅ Using DATABASE_URL connection string (whitespace fixed)');
+        console.log('✅ Using DATABASE_URL connection string');
         console.log('   Connecting to:', dbUrl.replace(/:[^@]*@/, ':***@'));
     } catch (e) {
         console.error('⚠️ Failed to parse DATABASE_URL, falling back to individual variables');
